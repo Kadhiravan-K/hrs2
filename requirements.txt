@@ -1,0 +1,8 @@
+Pillow
+reportlab
+tkcalendar
+adafruit-circuitpython-mlx90614
+adafruit-circuitpython-bme280
+adafruit-blinka
+gpiozero
+RPi.GPIO
