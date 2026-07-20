@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
+from pathlib import Path
 from tkinter import messagebox, ttk
 from typing import Any
 
@@ -105,10 +107,24 @@ class ReportPreviewScreen(BaseScreen):
         ttk.Label(card, text=report_path, style="Card.TLabel", wraplength=760).pack(anchor="w", pady=(10, 24))
         actions = ttk.Frame(card, style="Card.TFrame")
         actions.pack(anchor="w")
-        ttk.Button(actions, text="Print Report", command=lambda: self.print_report(report_path),
+        ttk.Button(actions, text="Download Report", command=lambda: self.download_report(report_path),
                    style="Secondary.TButton").pack(side="left")
+        ttk.Button(actions, text="Print Report", command=lambda: self.print_report(report_path),
+                   style="Secondary.TButton").pack(side="left", padx=10)
         ttk.Button(actions, text="Next Registration", command=self.next_registration,
-                   style="Primary.TButton").pack(side="left", padx=10)
+                   style="Primary.TButton").pack(side="left")
+
+    def download_report(self, report_path: str) -> None:
+        """Copy the completed local report to the user's Downloads folder."""
+        try:
+            downloads = Path.home() / "Downloads"
+            downloads.mkdir(parents=True, exist_ok=True)
+            destination = downloads / Path(report_path).name
+            shutil.copy2(report_path, destination)
+        except OSError as error:
+            messagebox.showerror("Download report", f"Could not copy the report to Downloads:\n{error}", parent=self)
+            return
+        messagebox.showinfo("Download report", f"Report copied to:\n{destination}", parent=self)
 
     def print_report(self, report_path: str) -> None:
         """Send the completed PDF to the operating system's configured printer."""
