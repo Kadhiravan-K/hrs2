@@ -32,7 +32,9 @@ class PatientRegistrationScreen(BaseScreen):
         super().__init__(app)
         self.add_title("New Patient Registration", "Fields marked by validation are required.")
         self.values = {key: StringVar() for key, _ in self.FIELDS}
-        form = self.add_card()
+        content = self.add_scrollable_content()
+        form = ttk.Frame(content, style="Card.TFrame", padding=22)
+        form.pack(fill="x", padx=2, pady=(0, 8))
         ttk.Label(form, text="Patient Details", style="Section.TLabel").grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 14))
         for row, (key, label) in enumerate(self.FIELDS):
             grid_row = row + 1
@@ -46,7 +48,7 @@ class PatientRegistrationScreen(BaseScreen):
                 field = ttk.Entry(form, textvariable=self.values[key], width=42)
             field.grid(row=grid_row, column=1, sticky="ew", pady=6)
         form.columnconfigure(1, weight=1)
-        self.add_navigation(lambda: app.show_screen(HomeScreen), self.submit, "Continue")
+        self.add_navigation(lambda: app.show_screen(HomeScreen), self.submit, "Continue", parent=content)
         # Keyboard shortcuts: Enter to continue, Escape to go back
         self.bind_all("<Return>", lambda event: self.submit())
         self.bind_all("<Escape>", lambda event: app.show_screen(HomeScreen))

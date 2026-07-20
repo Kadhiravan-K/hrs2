@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
 from tkinter import messagebox, ttk
 from typing import Any
 
@@ -43,8 +45,9 @@ class ReportPreviewScreen(BaseScreen):
             ("Humidity", f"{readings['humidity']['value']} %"),
             ("Visit Date", draft.visit["visit_date"]),
         ]
-        summary = ttk.Frame(self)
-        summary.pack(fill="both", expand=True)
+        content = self.add_scrollable_content()
+        summary = ttk.Frame(content, style="Card.TFrame", padding=22)
+        summary.pack(fill="x", padx=2, pady=(0, 8))
         for row, (label, value) in enumerate(rows):
             ttk.Label(summary, text=f"{label}:", font=("Segoe UI", 10, "bold")).grid(
                 row=row, column=0, sticky="nw", padx=(0, 12), pady=2
@@ -67,11 +70,11 @@ class ReportPreviewScreen(BaseScreen):
         )
         ttk.Label(summary, text=history_text, wraplength=680).grid(row=len(rows) + 1, column=1, sticky="w", pady=(8, 2))
 
-        actions = ttk.Frame(self)
-        actions.pack(fill="x", pady=(18, 0))
-        ttk.Button(actions, text="Back", command=self.go_back).pack(side="left")
-        ttk.Button(actions, text="Cancel", command=app.cancel_preview).pack(side="left", padx=8)
-        ttk.Button(actions, text="Generate Report", command=self.generate_report).pack(side="right")
+        actions = ttk.Frame(content)
+        actions.pack(fill="x", pady=(14, 8))
+        ttk.Button(actions, text="Back", command=self.go_back, style="Secondary.TButton").pack(side="left")
+        ttk.Button(actions, text="Cancel", command=app.cancel_preview, style="Secondary.TButton").pack(side="left", padx=8)
+        ttk.Button(actions, text="Generate Report", command=self.generate_report, style="Primary.TButton").pack(side="right")
 
     def go_back(self) -> None:
         """Remove reserved records and return to sensor collection for changes."""
@@ -90,7 +93,37 @@ class ReportPreviewScreen(BaseScreen):
         except (ReportGenerationError, RuntimeError, ValueError) as error:
             messagebox.showerror("Report generation", str(error), parent=self)
             return
-        messagebox.showinfo("Report generated", f"Report saved to:\n{report_path}", parent=self)
+        self.show_report_complete(report_path)
+
+    def show_report_complete(self, report_path: str) -> None:
+        """Offer optional printing before starting the next registration loop."""
+        for child in self.winfo_children():
+            child.destroy()
+        self.add_title("Report Generated", "The report has been saved successfully.")
+        card = self.add_card()
+        ttk.Label(card, text="Patient report is ready", style="Section.TLabel").pack(anchor="w")
+        ttk.Label(card, text=report_path, style="Card.TLabel", wraplength=760).pack(anchor="w", pady=(10, 24))
+        actions = ttk.Frame(card, style="Card.TFrame")
+        actions.pack(anchor="w")
+        ttk.Button(actions, text="Print Report", command=lambda: self.print_report(report_path),
+                   style="Secondary.TButton").pack(side="left")
+        ttk.Button(actions, text="Next Registration", command=self.next_registration,
+                   style="Primary.TButton").pack(side="left", padx=10)
+
+    def print_report(self, report_path: str) -> None:
+        """Send the completed PDF to the operating system's configured printer."""
+        try:
+            if os.name == "nt":
+                os.startfile(report_path, "print")  # type: ignore[attr-defined]
+            else:
+                subprocess.Popen(["lp", report_path])
+        except (OSError, FileNotFoundError) as error:
+            messagebox.showerror("Print report", f"Could not send the report to a printer:\n{error}", parent=self)
+            return
+        messagebox.showinfo("Print report", "The report was sent to the system printer.", parent=self)
+
+    def next_registration(self) -> None:
+        """Return to Home and begin the next patient registration."""
         from frontend.home import HomeScreen
         self.app.clear_draft()
         self.app.show_screen(HomeScreen)

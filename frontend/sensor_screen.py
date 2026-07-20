@@ -10,51 +10,51 @@ from frontend.home import BaseScreen
 
 
 class SensorScreen(BaseScreen):
-    """Read values on demand and show blue real values or red demo values."""
+    """Read values on demand and distinguish hardware values from fallback values."""
 
     DISPLAY = (
-        ("body_temperature", "Body Temperature", "°C"),
+        ("body_temperature", "Body Temperature", "deg C"),
         ("heart_rate", "Heart Rate", "BPM"),
-        ("room_temperature", "Room Temperature", "°C"),
+        ("room_temperature", "Room Temperature", "deg C"),
         ("humidity", "Humidity", "%"),
     )
 
     def __init__(self, app: Any) -> None:
         super().__init__(app)
-        self.add_title("Sensor Data Collection", "click the read sensor button") # Blue = real sensor value. Red = demo fallback value
+        self.title_label = self.add_title("Sensor Data Collection", "Click Read Sensors to collect the current values.")
         self.value_labels: dict[str, tk.Label] = {}
         self.header_labels: dict[str, tk.Label] = {}
-        panel = ttk.Frame(self)
-        panel.pack(anchor="w", pady=18)
-        for row, (key, label, unit) in enumerate(self.DISPLAY):
-            header = tk.Label(panel, text=f"{label}:", font=("Segoe UI", 14, "bold"), fg="black")
-            header.grid(row=row, column=0, sticky="w", padx=(0, 16), pady=8)
-            value = tk.Label(panel, text="Not read", font=("Segoe UI", 13), fg="black")
-            value.grid(row=row, column=1, sticky="w", pady=8)
+        card = self.add_card()
+        panel = ttk.Frame(card, style="Card.TFrame")
+        panel.pack(anchor="w", pady=(0, 18))
+        for row, (key, label, _) in enumerate(self.DISPLAY):
+            header = tk.Label(panel, text=f"{label}:", font=("Segoe UI", 14, "bold"), fg="#18324A", bg="#FFFFFF")
+            header.grid(row=row, column=0, sticky="w", padx=(0, 20), pady=10)
+            value = tk.Label(panel, text="Not read", font=("Segoe UI", 13), fg="#18324A", bg="#FFFFFF")
+            value.grid(row=row, column=1, sticky="w", pady=10)
             self.value_labels[key] = value
             self.header_labels[key] = header
-        style = ttk.Style(self)
-        style.configure("Accent.TButton", background="#2563EB", foreground="#FFFFFF", padding=(14, 8))
-        style.map("Accent.TButton", background=[("active", "#1D4ED8")], foreground=[("active", "#FFFFFF")])
-        ttk.Button(self, text="Read Sensors", command=self.read_sensors, style="Accent.TButton").pack(anchor="w")
+        ttk.Button(card, text="Read Sensors", command=self.read_sensors, style="Primary.TButton").pack(anchor="w")
         self.add_navigation(self.go_back, self.continue_visit, "Continue to Preview")
 
     def read_sensors(self) -> None:
-        """Collect values without allowing an unavailable hardware library to crash the UI."""
+        """Collect readings without allowing unavailable hardware libraries to crash the UI."""
         readings = self.app.sensor_manager.collect_readings()
         if self.app.draft is not None:
             self.app.draft.sensor_readings = readings
         units = {key: unit for key, _, unit in self.DISPLAY}
         for key, reading in readings.items():
             source = reading.get("source", "demo")
-            color = "blue" if source == "real" else "red"
+            color = "#2563EB" if source == "real" else "#DC2626"
             self.header_labels[key].configure(fg=color)
-            # Do not display the literal 'demo' text in the red fallback UI.
-            suffix = f" ({source.upper()})" if source == "real" else ""
+            suffix = " (REAL)" if source == "real" else ""
             self.value_labels[key].configure(text=f"{reading['value']} {units[key]}{suffix}", fg=color)
+        # Blue title means every reading is real; red means one or more values are demo/fallback.
+        title_color = "#2563EB" if all(item.get("source") == "real" for item in readings.values()) else "#DC2626"
+        self.title_label.configure(foreground=title_color)
 
     def go_back(self) -> None:
-        """Return to doctor selection while retaining any prior readings in the draft."""
+        """Return to doctor selection while retaining prior readings in the draft."""
         from frontend.doctor_selection import DoctorSelectionScreen
         self.app.show_screen(DoctorSelectionScreen)
 

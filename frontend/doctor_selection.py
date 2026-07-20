@@ -16,7 +16,9 @@ class DoctorSelectionScreen(BaseScreen):
         self.add_title("Doctor Selection", "A recommendation is preselected from the selected symptoms; you can choose any doctor.")
         self.doctors = app.doctor_service.get_active_doctors()
         self.recommended_doctor = self._recommend_doctor()
-        card = self.add_card()
+        content = self.add_scrollable_content()
+        card = ttk.Frame(content, style="Card.TFrame", padding=22)
+        card.pack(fill="x", padx=2, pady=(0, 8))
         recommendation = (f"Recommended: {self.recommended_doctor['doctor_name']} - "
                           f"{self.recommended_doctor['department']}"
                           if self.recommended_doctor else "No symptom-based recommendation is available.")
@@ -37,7 +39,7 @@ class DoctorSelectionScreen(BaseScreen):
             self.table.focus(str(self.recommended_doctor["doctor_id"]))
         self.notice = ttk.Label(card, text="" if self.doctors else "No active doctors are available in the database.", style="Card.TLabel")
         self.notice.pack(anchor="w", pady=(10, 0))
-        self.continue_button = self.add_navigation(self.go_back, self.continue_visit)
+        self.continue_button = self.add_navigation(self.go_back, self.continue_visit, parent=content)
         if not self.doctors:
             self.continue_button.configure(state="disabled")
 

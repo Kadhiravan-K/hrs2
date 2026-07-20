@@ -24,7 +24,9 @@ class SymptomsScreen(BaseScreen):
         self.add_title("Symptoms", "Select every symptom that applies to this visit.")
         self.selected = {symptom: BooleanVar() for symptom in self.SYMPTOMS}
         self.other_text = StringVar()
-        options = self.add_card()
+        content = self.add_scrollable_content()
+        options = ttk.Frame(content, style="Card.TFrame", padding=22)
+        options.pack(fill="x", padx=2, pady=(0, 8))
         ttk.Label(options, text="Select Symptoms", style="Section.TLabel").grid(row=0, column=0, columnspan=4, sticky="w", pady=(0, 12))
         for index, symptom in enumerate(self.SYMPTOMS):
             ttk.Checkbutton(options, text=symptom, variable=self.selected[symptom]).grid(
@@ -34,7 +36,7 @@ class SymptomsScreen(BaseScreen):
         other.grid(row=10, column=0, columnspan=4, sticky="w", pady=(16, 0))
         ttk.Label(other, text="Other symptom details:", style="Card.TLabel").pack(side="left")
         ttk.Entry(other, textvariable=self.other_text, width=42).pack(side="left", padx=8)
-        self.add_navigation(lambda: app.show_screen(HomeScreen), self.continue_visit)
+        self.add_navigation(lambda: app.show_screen(HomeScreen), self.continue_visit, parent=content)
 
     def continue_visit(self) -> None:
         """Save selections to the draft and choose the next flow screen."""

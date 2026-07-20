@@ -29,7 +29,7 @@ class HRSApplication(tk.Tk):
         super().__init__()
         self.title("Health Registration System")
         self.geometry("1080x720")
-        self.minsize(920, 620)
+        self.minsize(760, 520)
         self._configure_theme()
         self.patient_service = PatientService()
         self.doctor_service = DoctorService()

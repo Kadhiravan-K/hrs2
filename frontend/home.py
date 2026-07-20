@@ -14,16 +14,18 @@ class BaseScreen(ttk.Frame):
         super().__init__(app, padding=24)
         self.app = app
 
-    def add_title(self, title: str, subtitle: str = "") -> None:
+    def add_title(self, title: str, subtitle: str = "") -> ttk.Label:
         """Add a modern hero-style screen heading."""
         hero = ttk.Frame(self, style="Hero.TFrame", padding=20)
         hero.pack(fill="x", pady=(0, 16))
-        ttk.Label(hero, text=title, style="Hero.TLabel").pack(anchor="w")
+        title_label = ttk.Label(hero, text=title, style="Hero.TLabel")
+        title_label.pack(anchor="w")
         if subtitle:
             ttk.Label(hero, text=subtitle, style="Subtitle.TLabel").pack(anchor="w", pady=(6, 0))
         accent = ttk.Frame(hero, style="Accent.TFrame", height=4)
         accent.pack(fill="x", pady=(12, 0))
         accent.configure(height=4)
+        return title_label
 
     def add_card(self) -> ttk.Frame:
         """Create a modern content card with calmer spacing."""
@@ -31,10 +33,42 @@ class BaseScreen(ttk.Frame):
         card.pack(fill="both", expand=True)
         return card
 
-    def add_navigation(self, back_command: Any, next_command: Any, next_text: str = "Continue") -> ttk.Button:
+    def add_scrollable_content(self) -> ttk.Frame:
+        """Return a mouse-wheel scrollable area for long responsive screens."""
+        outer = ttk.Frame(self)
+        outer.pack(fill="both", expand=True)
+        canvas = tk.Canvas(outer, background="#F5F7FB", highlightthickness=0, borderwidth=0)
+        scrollbar = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        content = ttk.Frame(canvas)
+        window_id = canvas.create_window((0, 0), window=content, anchor="nw")
+
+        def update_scroll_region(_: Any) -> None:
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        def update_width(event: Any) -> None:
+            canvas.itemconfigure(window_id, width=event.width)
+
+        def on_mouse_wheel(event: Any) -> None:
+            canvas.yview_scroll(int(-event.delta / 120), "units")
+
+        def remove_mouse_wheel(event: Any) -> None:
+            if event.widget is outer:
+                canvas.unbind_all("<MouseWheel>")
+
+        content.bind("<Configure>", update_scroll_region)
+        canvas.bind("<Configure>", update_width)
+        canvas.bind_all("<MouseWheel>", on_mouse_wheel)
+        outer.bind("<Destroy>", remove_mouse_wheel, add="+")
+        return content
+
+    def add_navigation(self, back_command: Any, next_command: Any, next_text: str = "Continue",
+                       parent: ttk.Frame | None = None) -> ttk.Button:
         """Add standard Back and Continue buttons with a cleaner layout."""
-        row = ttk.Frame(self)
-        row.pack(fill="x", side="bottom", pady=(20, 0))
+        row = ttk.Frame(parent or self)
+        row.pack(fill="x", pady=(20, 8))
         ttk.Button(row, text="Back", command=back_command, style="Secondary.TButton").pack(side="left")
         next_button = ttk.Button(row, text=next_text, command=next_command, style="Primary.TButton")
         next_button.pack(side="right")
