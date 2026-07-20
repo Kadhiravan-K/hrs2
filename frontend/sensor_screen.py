@@ -46,9 +46,12 @@ class SensorScreen(BaseScreen):
             self.app.draft.sensor_readings = readings
         units = {key: unit for key, _, unit in self.DISPLAY}
         for key, reading in readings.items():
-            color = "blue" if reading["source"] == "real" else "red"
+            source = reading.get("source", "demo")
+            color = "blue" if source == "real" else "red"
             self.header_labels[key].configure(fg=color)
-            self.value_labels[key].configure(text=f"{reading['value']} {units[key]} ({reading['source'].upper()})", fg=color)
+            # Do not display the literal 'demo' text in the red fallback UI.
+            suffix = f" ({source.upper()})" if source == "real" else ""
+            self.value_labels[key].configure(text=f"{reading['value']} {units[key]}{suffix}", fg=color)
 
     def go_back(self) -> None:
         """Return to doctor selection while retaining any prior readings in the draft."""
