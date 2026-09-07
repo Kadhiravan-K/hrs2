@@ -17,7 +17,12 @@ class ReportService:
 
     def __init__(self, reports_directory: str | Path | None = None) -> None:
         root = Path(__file__).resolve().parent.parent
-        self.reports_directory = Path(reports_directory) if reports_directory else root / "reports"
+        if reports_directory is not None:
+            self.reports_directory = Path(reports_directory)
+        else:
+            legacy_dir = root / "reports"
+            new_dir = root / "Generated Reports"
+            self.reports_directory = new_dir if new_dir.exists() or not legacy_dir.exists() else legacy_dir
 
     @staticmethod
     def _history_lines(history: list[dict[str, Any]]) -> list[str]:
